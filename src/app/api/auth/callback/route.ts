@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
   const data = await response.json()
 
-  const redirectResponse = NextResponse.redirect(new URL("/time-entry", request.url))
+  const redirectResponse = NextResponse.redirect(new URL("/auth-success", request.url))
   redirectResponse.cookies.set("harvest_token", data.access_token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
