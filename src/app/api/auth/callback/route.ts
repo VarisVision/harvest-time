@@ -2,9 +2,16 @@ import { NextRequest, NextResponse } from "next/server"
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code")
+  const error = request.nextUrl.searchParams.get("error")
+
+  if (error) {
+    const redirectResponse = NextResponse.redirect(new URL(`/auth-error?error=${encodeURIComponent(error)}`, request.url))
+    return redirectResponse
+  }
 
   if (!code) {
-    return NextResponse.json({ error: "No code provided" }, { status: 400 })
+    const redirectResponse = NextResponse.redirect(new URL("/auth-error?error=No code provided", request.url))
+    return redirectResponse
   }
 
   const clientId = process.env.HARVEST_CLIENT_ID
@@ -12,7 +19,8 @@ export async function GET(request: NextRequest) {
   const clientSecret = process.env.HARVEST_CLIENT_SECRET
 
   if (!clientId || !redirectUri || !clientSecret) {
-    return NextResponse.json({ error: "Missing OAuth env vars" }, { status: 500 })
+    const redirectResponse = NextResponse.redirect(new URL("/auth-error?error=Missing OAuth configuration", request.url))
+    return redirectResponse
   }
 
   const response = await fetch("https://id.getharvest.com/api/v2/oauth2/token", {
@@ -28,7 +36,8 @@ export async function GET(request: NextRequest) {
   })
 
   if (!response.ok) {
-    return NextResponse.json({ error: "Failed to get token" }, { status: response.status })
+    const redirectResponse = NextResponse.redirect(new URL(`/auth-error?error=Failed to get token`, request.url))
+    return redirectResponse
   }
 
   const data = await response.json()
