@@ -3,9 +3,14 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { logout } from "../utils/logout"
+import { Autocomplete, TextField, Box } from "@mui/material"
 
 type ProjectAssignment = {
   id: number
+  client: {
+    id: number
+    name: string
+  }
   project: {
     id: number
     name: string
@@ -22,6 +27,7 @@ type ProjectAssignment = {
 type Project = {
   id: number
   name: string
+  clientName: string
   tasks: Array<{
     id: number
     name: string
@@ -30,7 +36,7 @@ type Project = {
 
 export default function TimeEntryPage() {
   const [projects, setProjects] = useState<Project[]>([])
-  const [selectedProject, setSelectedProject] = useState<number | "">("")
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [selectedTask, setSelectedTask] = useState<number | "">("")
   const [hours, setHours] = useState<string>("")
   const [date, setDate] = useState<string>("")
@@ -74,6 +80,7 @@ export default function TimeEntryPage() {
           projectMap.set(projectId, {
             id: projectId,
             name: assignment.project.name,
+            clientName: assignment.client.name,
             tasks: []
           })
         }
@@ -116,7 +123,7 @@ export default function TimeEntryPage() {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          project_id: selectedProject,
+          project_id: selectedProject?.id || 0,
           task_id: selectedTask,
           hours: parseFloat(hours),
           spent_date: date,
@@ -129,7 +136,7 @@ export default function TimeEntryPage() {
         throw new Error(errorData.error || "Failed to create time entry")
       }
 
-      setSelectedProject("")
+      setSelectedProject(null)
       setSelectedTask("")
       setHours("")
       setDate("")
@@ -179,28 +186,38 @@ export default function TimeEntryPage() {
           {error}
         </div>
       )}
-      
       <div className="w-full max-w-2xl mb-8">
         <h2 className="text-xl font-semibold mb-4">Create New Time Entry</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
+          
           <div>
             <label className="block text-sm font-medium mb-2">Project *</label>
-            <select
+            <Autocomplete
+              options={projects}
+              groupBy={(option) => option.clientName}
+              getOptionLabel={(option) => option.name}
               value={selectedProject}
-              onChange={(e) => {
-                setSelectedProject(Number(e.target.value) || "")
+              onChange={(event, newValue) => {
+                setSelectedProject(newValue)
                 setSelectedTask("")
               }}
-              className="w-full p-2 border rounded text-black"
-              required
-            >
-              <option value="">Select a project</option>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
-              ))}
-            </select>
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  placeholder="Select a project"
+                  required
+                />
+              )}
+              renderGroup={(params) => (
+                <li key={params.key}>
+                  <Box sx={{ py: 0.5, px: 2, fontWeight: 'bold', color: 'text.secondary' }}>
+                    {params.group}
+                  </Box>
+                  <ul>{params.children}</ul>
+                </li>
+              )}
+              sx={{ width: '100%' }}
+            />
           </div>
 
           <div>
@@ -213,7 +230,7 @@ export default function TimeEntryPage() {
               disabled={!selectedProject}
             >
               <option value="">Select a task</option>
-              {selectedProject && projects.find(p => p.id === selectedProject)?.tasks.map((task) => (
+              {selectedProject && selectedProject.tasks.map((task) => (
                 <option key={task.id} value={task.id}>
                   {task.name}
                 </option>
