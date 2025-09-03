@@ -3,21 +3,15 @@
 import { useEffect, useState } from "react"
 
 export default function LoginPage() {
-  const [error, setError] = useState<string | null>(null)
   const [isAuthorizing, setIsAuthorizing] = useState(false)
 
   useEffect(() => {
-    const url = new URL(window.location.href)
-    const err = url.searchParams.get("error")
-    if (err) setError(err)
-
     const handleMessage = (event: MessageEvent) => {
       if (event.data.type === "OAUTH_SUCCESS") {
         setIsAuthorizing(false)
         window.location.href = "/time-entry"
       } else if (event.data.type === "OAUTH_ERROR") {
         setIsAuthorizing(false)
-        setError("Authentication was denied or failed")
       }
     }
 
@@ -65,7 +59,6 @@ export default function LoginPage() {
             You need to be signed into a Harvest account!<br /> 
             Please, sign in or sign up:
         </p>
-        {error && <p>{error}</p>}
         <button onClick={handleAuthorize} className="hover:cursor-pointer bg-amber-300 hover:bg-amber-400 p-2 rounded-md text-black font-bold">Sign In</button>
     </div>
   )

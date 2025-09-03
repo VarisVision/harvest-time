@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { cookies } from "next/headers"
 
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   const cookieStore = await cookies()
   const token = cookieStore.get('harvest_token')?.value
 
@@ -10,10 +10,26 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const body = await request.json()
+    const { project_id, task_id, hours, spent_date, notes } = body
+
+    if (!project_id || !task_id || !hours || !spent_date) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    }
+
     const response = await fetch("https://api.harvestapp.com/v2/time_entries", {
+      method: "POST",
       headers: {
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
       },
+      body: JSON.stringify({
+        project_id,
+        task_id,
+        hours,
+        spent_date,
+        notes: notes || ""
+      })
     })
 
     if (!response.ok) {
@@ -24,9 +40,9 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json()
-    return NextResponse.json(data.time_entries || [])
+    return NextResponse.json(data)
   } catch (error) {
-    console.error("Error fetching time entries:", error)
-    return NextResponse.json({ error: "Failed to fetch time entries" }, { status: 500 })
+    console.error("Error creating time entry:", error)
+    return NextResponse.json({ error: "Failed to create time entry" }, { status: 500 })
   }
 }
