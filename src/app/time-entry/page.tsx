@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { logout } from "../utils/logout"
-import { Autocomplete, TextField, Box } from "@mui/material"
+import { Select, MenuItem, ListSubheader, TextField, Box, FormControl } from "@mui/material"
 
 type ProjectAssignment = {
   id: number
@@ -36,6 +36,8 @@ type Project = {
 
 export default function TimeEntryPage() {
   const [projects, setProjects] = useState<Project[]>([])
+  const [filteredProjects, setFilteredProjects] = useState<Project[]>([])
+  const [searchTerm, setSearchTerm] = useState<string>("")
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [selectedTask, setSelectedTask] = useState<number | "">("")
   const [hours, setHours] = useState<string>("")
@@ -46,6 +48,32 @@ export default function TimeEntryPage() {
   const [error, setError] = useState<string | null>(null)
   const [logoutLoading, setLogoutLoading] = useState(false)
   const router = useRouter()
+
+  useEffect(() => {
+    if (projects.length > 0) {
+      const lastProjectId = localStorage.getItem('lastSelectedProjectId')
+      if (lastProjectId) {
+        const lastProject = projects.find(p => p.id === parseInt(lastProjectId))
+        if (lastProject) {
+          setSelectedProject(lastProject)
+          return
+        }
+      }
+      setSelectedProject(projects[0])
+    }
+  }, [projects])
+
+  useEffect(() => {
+    if (searchTerm.trim() === "") {
+      setFilteredProjects(projects)
+    } else {
+      const filtered = projects.filter(project => 
+        project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        project.clientName.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      setFilteredProjects(filtered)
+    }
+  }, [searchTerm, projects])
 
   useEffect(() => {
     fetchData()
@@ -65,8 +93,6 @@ export default function TimeEntryPage() {
       }
 
       const assignmentsData = await assignmentsRes.json()
-      
-      console.log('Project assignments data:', assignmentsData)
       
       const projectMap = new Map<number, Project>()
       assignmentsData.forEach((assignment: ProjectAssignment) => {
@@ -96,7 +122,13 @@ export default function TimeEntryPage() {
         })
       })
       
-      setProjects(Array.from(projectMap.values()))
+      const projectsArray = Array.from(projectMap.values()).sort((a, b) => {
+        if (a.clientName === b.clientName) {
+          return a.name.localeCompare(b.name)
+        }
+        return a.clientName.localeCompare(b.clientName)
+      })
+      setProjects(projectsArray)
       setLoading(false)
     } catch (error) {
       console.error("Error fetching data:", error)
@@ -156,6 +188,16 @@ export default function TimeEntryPage() {
     await logout()
   }
 
+  const handleSearchInputClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  const handleSearchInputFocus = (e: React.FocusEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-screen">
@@ -190,35 +232,89 @@ export default function TimeEntryPage() {
         <h2 className="text-xl font-semibold mb-4">Create New Time Entry</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           
-          <div>
-            <label className="block text-sm font-medium mb-2">Project *</label>
-            <Autocomplete
-              options={projects}
-              groupBy={(option) => option.clientName}
-              getOptionLabel={(option) => option.name}
-              value={selectedProject}
-              onChange={(event, newValue) => {
-                setSelectedProject(newValue)
-                setSelectedTask("")
-              }}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  placeholder="Select a project"
-                  required
-                />
-              )}
-              renderGroup={(params) => (
-                <li key={params.key}>
-                  <Box sx={{ py: 0.5, px: 2, fontWeight: 'bold', color: 'text.secondary' }}>
-                    {params.group}
-                  </Box>
-                  <ul>{params.children}</ul>
-                </li>
-              )}
-              sx={{ width: '100%' }}
-            />
-          </div>
+                                <div>
+             <label className="block text-sm font-medium mb-2">Project *</label>
+             <FormControl fullWidth>
+               <Select
+                 value={selectedProject?.id || ""}
+                 onChange={(e) => {
+                   const projectId = e.target.value
+                   const project = filteredProjects.find(p => p.id === projectId)
+                   setSelectedProject(project || null)
+                   if (project) {
+                     localStorage.setItem('lastSelectedProjectId', project.id.toString())
+                   }
+                   setSelectedTask("")
+                 }}
+                 displayEmpty
+                 MenuProps={{
+                   PaperProps: {
+                     style: {
+                       maxHeight: 400
+                     }
+                   }
+                 }}
+               >
+                                                     <MenuItem 
+                    sx={{ 
+                      p: 0, 
+                      m: 0,
+                      cursor: 'default',
+                      '&:hover': { backgroundColor: 'transparent' },
+                      pointerEvents: 'none'
+                    }}
+                  >
+                                         <TextField
+                       fullWidth
+                       size="small"
+                       placeholder="Search projects..."
+                       value={searchTerm}
+                       onChange={(e) => setSearchTerm(e.target.value)}
+                       onClick={handleSearchInputClick}
+                       onMouseDown={handleSearchInputClick}
+                       onFocus={handleSearchInputFocus}
+                                               sx={{
+                          pointerEvents: 'auto',
+                          '& .MuiOutlinedInput-root': {
+                            backgroundColor: 'white',
+                            '&:hover': {
+                              backgroundColor: '#f8f9fa'
+                            }
+                          }
+                        }}
+                       InputProps={{
+                         startAdornment: <Box sx={{ mr: 1, color: 'text.secondary' }}>🔍</Box>
+                       }}
+                     />
+                  </MenuItem>
+                 {(() => {
+                   const grouped = filteredProjects.reduce((acc, project) => {
+                     if (!acc[project.clientName]) {
+                       acc[project.clientName] = []
+                     }
+                     acc[project.clientName].push(project)
+                     return acc
+                   }, {} as Record<string, Project[]>)
+                   
+                   return Object.entries(grouped).map(([clientName, projects]) => [
+                     <ListSubheader key={`header-${clientName}`} sx={{ 
+                       backgroundColor: '#f5f5f5',
+                       fontWeight: 'bold',
+                       color: 'text.secondary',
+                       borderBottom: '1px solid #e0e0e0'
+                     }}>
+                       {clientName}
+                     </ListSubheader>,
+                     ...projects.map(project => (
+                       <MenuItem key={project.id} value={project.id}>
+                         {project.name}
+                       </MenuItem>
+                     ))
+                   ])
+                 })()}
+               </Select>
+             </FormControl>
+           </div>
 
           <div>
             <label className="block text-sm font-medium mb-2">Task *</label>
