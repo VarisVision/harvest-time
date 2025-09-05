@@ -178,8 +178,6 @@ export default function TimeEntryForm({ onSubmit }: TimeEntryFormProps) {
         notes: message
       })
 
-      setSelectedProject(null)
-      setSelectedTask(null)
       setHours("")
       setDate(new Date())
       setMessage("")
