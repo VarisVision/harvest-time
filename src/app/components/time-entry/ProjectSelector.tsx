@@ -7,7 +7,8 @@ import {
   MenuItem, 
   ListSubheader, 
   TextField, 
-  InputAdornment 
+  InputAdornment,
+  OutlinedInput
 } from "@mui/material"
 import { Project } from "../types"
 
@@ -52,7 +53,6 @@ export default function ProjectSelector({
 
   return (
     <div>
-      <label className="block text-sm font-medium mb-2">Project *</label>
       <FormControl fullWidth>
         <Select
           MenuProps={{ 
@@ -66,8 +66,9 @@ export default function ProjectSelector({
           sx={{
             '& .MuiInputBase-input': {
               padding: '10px 2rem .5rem 1rem',
-            }
+            },
           }}
+          input={<OutlinedInput label="Project" />}
           value={selectedProject?.id || ""}
           onChange={(e) => {
             const projectId = e.target.value
@@ -86,6 +87,7 @@ export default function ProjectSelector({
             </div>
           ) : ""}
           displayEmpty
+
         >
           <ListSubheader>
             <TextField

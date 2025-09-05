@@ -7,7 +7,8 @@ import {
   MenuItem, 
   ListSubheader, 
   TextField, 
-  InputAdornment 
+  InputAdornment, 
+  OutlinedInput
 } from "@mui/material"
 import { Task } from "../types"
 
@@ -51,7 +52,6 @@ export default function TaskSelector({
 
   return (
     <div>
-      <label className="block text-sm font-medium mb-2">Task *</label>
       <FormControl fullWidth>
         <Select
           MenuProps={{ 
@@ -68,6 +68,7 @@ export default function TaskSelector({
             }
           }}
           value={selectedTask?.id || ""}
+          input={<OutlinedInput label="Task" />}
           onChange={(e) => {
             const taskId = e.target.value
             const task = tasks.find(t => t.id === taskId)

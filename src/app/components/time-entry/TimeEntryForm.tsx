@@ -2,9 +2,23 @@
 
 import React, { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
+import { DatePicker } from "@mui/x-date-pickers/DatePicker"
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns"
+import { SvgIcon } from "@mui/material"
 import ProjectSelector from "./ProjectSelector"
 import TaskSelector from "./TaskSelector"
 import { Project, Task, ProjectAssignment } from "../types"
+
+const CustomCalendarIcon = (props) => (
+  <SvgIcon {...props}>
+    <g fill="none">
+      <path stroke="currentColor" strokeWidth="1.5" d="M2 12c0-3.771 0-5.657 1.172-6.828S6.229 4 10 4h4c3.771 0 5.657 0 6.828 1.172S22 8.229 22 12v2c0 3.771 0 5.657-1.172 6.828S17.771 22 14 22h-4c-3.771 0-5.657 0-6.828-1.172S2 17.771 2 14z" />
+      <path stroke="currentColor" strokeLinecap="round" strokeWidth="1.5" d="M7 4V2.5M17 4V2.5M2.5 9h19" />
+      <path fill="currentColor" d="M18 17a1 1 0 1 1-2 0a1 1 0 0 1 2 0m0-4a1 1 0 1 1-2 0a1 1 0 0 1 2 0m-5 4a1 1 0 1 1-2 0a1 1 0 0 1 2 0m0-4a1 1 0 1 1-2 0a1 1 0 0 1 2 0m-5 4a1 1 0 1 1-2 0a1 1 0 0 1 2 0m0-4a1 1 0 1 1-2 0a1 1 0 0 1 2 0" />
+    </g>
+  </SvgIcon>
+);
 
 interface TimeEntryFormProps {
   onSubmit: (data: {
@@ -23,7 +37,7 @@ export default function TimeEntryForm({ onSubmit }: TimeEntryFormProps) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [taskSearchTerm, setTaskSearchTerm] = useState<string>("")
   const [hours, setHours] = useState<string>("")
-  const [date, setDate] = useState<string>("")
+  const [date, setDate] = useState<Date | null>(new Date())
   const [message, setMessage] = useState<string>("")
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -123,11 +137,32 @@ export default function TimeEntryForm({ onSubmit }: TimeEntryFormProps) {
     fetchData()
   }, [fetchData])
 
+  const convertTimeToDecimal = (timeStr: string): number => {
+    if (!timeStr.includes(':')) {
+      return parseFloat(timeStr) || 0
+    }
+    
+    const parts = timeStr.split(':')
+    if (parts.length === 2) {
+      const hours = parseInt(parts[0]) || 0
+      const minutes = parseInt(parts[1]) || 0
+      return hours + (minutes / 60)
+    }
+    
+    return 0
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (!selectedProject || !selectedTask || !hours || !date) {
       setError("Please fill in all required fields")
+      return
+    }
+
+    const decimalHours = convertTimeToDecimal(hours)
+    if (decimalHours <= 0) {
+      setError("Please enter a valid time (e.g., 1:30, 0:45, 2.5)")
       return
     }
 
@@ -138,15 +173,15 @@ export default function TimeEntryForm({ onSubmit }: TimeEntryFormProps) {
       await onSubmit({
         project_id: selectedProject.id,
         task_id: selectedTask.id,
-        hours: parseFloat(hours),
-        spent_date: date,
+        hours: decimalHours,
+        spent_date: date.toISOString().split('T')[0],
         notes: message
       })
 
       setSelectedProject(null)
       setSelectedTask(null)
       setHours("")
-      setDate("")
+      setDate(new Date())
       setMessage("")
       setSearchTerm("")
       setTaskSearchTerm("")
@@ -200,9 +235,9 @@ export default function TimeEntryForm({ onSubmit }: TimeEntryFormProps) {
   }
 
   return (
-    <div className="w-full max-w-2xl mb-8">
-      <h2 className="text-xl font-semibold mb-4">Create New Time Entry</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <LocalizationProvider dateAdapter={AdapterDateFns}>
+      <div className="mb-8 png-time-entry">
+        <form onSubmit={handleSubmit} className="space-y-4">
         <ProjectSelector
           projects={projects}
           selectedProject={selectedProject}
@@ -221,49 +256,59 @@ export default function TimeEntryForm({ onSubmit }: TimeEntryFormProps) {
         />
 
         <div>
-          <label className="block text-sm font-medium mb-2">Message</label>
-          <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            className="w-full p-2 border rounded text-black"
-            rows={3}
-            placeholder="Optional notes about this time entry"
-          />
+            <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                className="w-full p-2 border rounded text-black"
+                rows={3}
+                placeholder="Optional notes about this time entry"
+            />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-2">Hours *</label>
-          <input
-            type="number"
-            step="0.25"
-            min="0"
-            value={hours}
-            onChange={(e) => setHours(e.target.value)}
-            className="w-full p-2 border rounded text-black"
-            placeholder="0.00"
-            required
-          />
-        </div>
+        <div className="flex flex-row gap-4">
+            <div>
+                <label className="hidden text-sm font-medium mb-2">Hours *</label>
+                <input
+                    type="text"
+                    value={hours}
+                    onChange={(e) => setHours(e.target.value)}
+                    className="w-full p-2 border rounded text-black time-input"
+                    placeholder="0:00"
+                    required
+                />
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-2">Date *</label>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="w-full p-2 border rounded text-black"
-            required
-          />
-        </div>
+            <div>
+                <label className="hidden text-sm font-medium mb-2">Date *</label>
+                <DatePicker
+                    value={date}
+                    onChange={(newValue) => setDate(newValue)}
+                    format="d MMM yy'"
+                    slots={{
+                        openPickerIcon: CustomCalendarIcon,
+                    }}
+                    slotProps={{
+                        textField: {
+                            fullWidth: true,
+                            size: 'small',
+                        },
+                        actionBar: {
+                            actions: ['today', 'cancel']
+                        }
+                    }}
+                />
+            </div>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 disabled:opacity-50 cursor-pointer"
-        >
-          {submitting ? "Saving..." : "Save Time Entry"}
-        </button>
+            <button
+                type="submit"
+                disabled={submitting}
+                className="w-full bg-green-600 text-white font-bold px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50 cursor-pointer"
+                >
+                {submitting ? "Saving..." : "Save Time Entry"}
+            </button>
+        </div>
       </form>
     </div>
+    </LocalizationProvider>
   )
 }
