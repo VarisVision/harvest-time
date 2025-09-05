@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { logout } from "../utils/logout"
-import { Select, MenuItem, ListSubheader, TextField, Box, FormControl } from "@mui/material"
+import { Autocomplete, TextField, Box, FormControl } from "@mui/material"
 
 type ProjectAssignment = {
   id: number
@@ -17,6 +17,7 @@ type ProjectAssignment = {
   }
   task_assignments: Array<{
     id: number
+    billable: boolean
     task: {
       id: number
       name: string
@@ -31,15 +32,16 @@ type Project = {
   tasks: Array<{
     id: number
     name: string
+    billable: boolean
   }>
 }
 
 export default function TimeEntryPage() {
   const [projects, setProjects] = useState<Project[]>([])
-  const [filteredProjects, setFilteredProjects] = useState<Project[]>([])
   const [searchTerm, setSearchTerm] = useState<string>("")
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
-  const [selectedTask, setSelectedTask] = useState<number | "">("")
+  const [selectedTask, setSelectedTask] = useState<{id: number, name: string, billable: boolean} | null>(null)
+  const [taskSearchTerm, setTaskSearchTerm] = useState<string>("")
   const [hours, setHours] = useState<string>("")
   const [date, setDate] = useState<string>("")
   const [message, setMessage] = useState<string>("")
@@ -64,16 +66,21 @@ export default function TimeEntryPage() {
   }, [projects])
 
   useEffect(() => {
-    if (searchTerm.trim() === "") {
-      setFilteredProjects(projects)
+    if (selectedProject && selectedProject.tasks.length > 0) {
+      const lastTaskId = localStorage.getItem('lastSelectedTaskId')
+      if (lastTaskId) {
+        const lastTask = selectedProject.tasks.find(t => t.id === parseInt(lastTaskId))
+        if (lastTask) {
+          setSelectedTask(lastTask)
+          return
+        }
+      }
+      setSelectedTask(selectedProject.tasks[0])
     } else {
-      const filtered = projects.filter(project => 
-        project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.clientName.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-      setFilteredProjects(filtered)
+      setSelectedTask(null)
     }
-  }, [searchTerm, projects])
+  }, [selectedProject])
+
 
   useEffect(() => {
     fetchData()
@@ -114,9 +121,11 @@ export default function TimeEntryPage() {
         
         assignment.task_assignments.forEach((taskAssignment) => {
           if (taskAssignment.task) {
+            console.log('Task assignment data:', taskAssignment)
             project.tasks.push({
               id: taskAssignment.task.id,
-              name: taskAssignment.task.name
+              name: taskAssignment.task.name,
+              billable: taskAssignment.billable !== false
             })
           }
         })
@@ -156,7 +165,7 @@ export default function TimeEntryPage() {
         },
         body: JSON.stringify({
           project_id: selectedProject?.id || 0,
-          task_id: selectedTask,
+          task_id: selectedTask?.id || 0,
           hours: parseFloat(hours),
           spent_date: date,
           notes: message
@@ -169,10 +178,12 @@ export default function TimeEntryPage() {
       }
 
       setSelectedProject(null)
-      setSelectedTask("")
+      setSelectedTask(null)
       setHours("")
       setDate("")
       setMessage("")
+      setSearchTerm("")
+      setTaskSearchTerm("")
       
       setError("Time entry created successfully!")
     } catch (error) {
@@ -188,15 +199,6 @@ export default function TimeEntryPage() {
     await logout()
   }
 
-  const handleSearchInputClick = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-  }
-
-  const handleSearchInputFocus = (e: React.FocusEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-  }
 
   if (loading) {
     return (
@@ -232,106 +234,160 @@ export default function TimeEntryPage() {
         <h2 className="text-xl font-semibold mb-4">Create New Time Entry</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           
-                                <div>
-             <label className="block text-sm font-medium mb-2">Project *</label>
-             <FormControl fullWidth>
-               <Select
-                 value={selectedProject?.id || ""}
-                 onChange={(e) => {
-                   const projectId = e.target.value
-                   const project = filteredProjects.find(p => p.id === projectId)
-                   setSelectedProject(project || null)
-                   if (project) {
-                     localStorage.setItem('lastSelectedProjectId', project.id.toString())
-                   }
-                   setSelectedTask("")
-                 }}
-                 displayEmpty
-                 MenuProps={{
-                   PaperProps: {
-                     style: {
-                       maxHeight: 400
-                     }
-                   }
-                 }}
-               >
-                                                     <MenuItem 
-                    sx={{ 
-                      p: 0, 
-                      m: 0,
-                      cursor: 'default',
-                      '&:hover': { backgroundColor: 'transparent' },
-                      pointerEvents: 'none'
-                    }}
-                  >
-                                         <TextField
-                       fullWidth
-                       size="small"
-                       placeholder="Search projects..."
-                       value={searchTerm}
-                       onChange={(e) => setSearchTerm(e.target.value)}
-                       onClick={handleSearchInputClick}
-                       onMouseDown={handleSearchInputClick}
-                       onFocus={handleSearchInputFocus}
-                                               sx={{
-                          pointerEvents: 'auto',
-                          '& .MuiOutlinedInput-root': {
-                            backgroundColor: 'white',
-                            '&:hover': {
-                              backgroundColor: '#f8f9fa'
-                            }
-                          }
-                        }}
-                       InputProps={{
-                         startAdornment: <Box sx={{ mr: 1, color: 'text.secondary' }}>🔍</Box>
-                       }}
-                     />
-                  </MenuItem>
-                 {(() => {
-                   const grouped = filteredProjects.reduce((acc, project) => {
-                     if (!acc[project.clientName]) {
-                       acc[project.clientName] = []
-                     }
-                     acc[project.clientName].push(project)
-                     return acc
-                   }, {} as Record<string, Project[]>)
-                   
-                   return Object.entries(grouped).map(([clientName, projects]) => [
-                     <ListSubheader key={`header-${clientName}`} sx={{ 
-                       backgroundColor: '#f5f5f5',
-                       fontWeight: 'bold',
-                       color: 'text.secondary',
-                       borderBottom: '1px solid #e0e0e0'
-                     }}>
-                       {clientName}
-                     </ListSubheader>,
-                     ...projects.map(project => (
-                       <MenuItem key={project.id} value={project.id}>
-                         {project.name}
-                       </MenuItem>
-                     ))
-                   ])
-                 })()}
-               </Select>
-             </FormControl>
-           </div>
+          <div>
+            <label className="block text-sm font-medium mb-2">Project *</label>
+            <Autocomplete
+              value={selectedProject}
+              onChange={(event, newValue) => {
+                setSelectedProject(newValue)
+                if (newValue) {
+                  localStorage.setItem('lastSelectedProjectId', newValue.id.toString())
+                }
+                setSelectedTask(null)
+                setTaskSearchTerm("")
+              }}
+              inputValue={searchTerm}
+              onInputChange={(event, newInputValue) => {
+                setSearchTerm(newInputValue)
+              }}
+              options={projects}
+              filterOptions={(options, { inputValue }) => {
+                const filtered = options.filter(option => 
+                  option.name.toLowerCase().includes(inputValue.toLowerCase()) ||
+                  option.clientName.toLowerCase().includes(inputValue.toLowerCase())
+                )
+                return filtered
+              }}
+              getOptionLabel={(option) => option.name}
+              groupBy={(option) => option.clientName}
+              renderGroup={(params) => (
+                <li key={params.key}>
+                  <div style={{
+                    backgroundColor: '#f5f5f5',
+                    fontWeight: 'bold',
+                    color: '#666',
+                    padding: '8px 16px',
+                    borderBottom: '1px solid #e0e0e0',
+                    fontSize: '0.875rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}>
+                    {params.group}
+                  </div>
+                  <ul style={{ padding: 0, margin: 0 }}>
+                    {params.children}
+                  </ul>
+                </li>
+              )}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  placeholder="Search projects..."
+                  size="small"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: 'white',
+                      '&:hover': {
+                        backgroundColor: '#f8f9fa'
+                      }
+                    }
+                  }}
+                />
+              )}
+              renderOption={(props, option) => (
+                <Box component="li" {...props}>
+                  {option.name}
+                </Box>
+              )}
+              ListboxProps={{
+                style: {
+                  maxHeight: 300
+                }
+              }}
+              noOptionsText="No projects found"
+              clearOnEscape
+              selectOnFocus
+              handleHomeEndKeys
+            />
+          </div>
 
           <div>
             <label className="block text-sm font-medium mb-2">Task *</label>
-            <select
+            <Autocomplete
               value={selectedTask}
-              onChange={(e) => setSelectedTask(Number(e.target.value) || "")}
-              className="w-full p-2 border rounded text-black"
-              required
+              onChange={(event, newValue) => {
+                setSelectedTask(newValue)
+                if (newValue) {
+                  localStorage.setItem('lastSelectedTaskId', newValue.id.toString())
+                }
+              }}
+              inputValue={taskSearchTerm}
+              onInputChange={(event, newInputValue) => {
+                setTaskSearchTerm(newInputValue)
+              }}
+              options={selectedProject?.tasks || []}
+              filterOptions={(options, { inputValue }) => {
+                const filtered = options.filter(option => 
+                  option.name.toLowerCase().includes(inputValue.toLowerCase())
+                )
+                return filtered
+              }}
+              getOptionLabel={(option) => option.name}
+              groupBy={(option) => {
+                console.log('Grouping task:', option.name, 'billable:', option.billable)
+                return option.billable ? "Billable" : "Non-Billable"
+              }}
+              renderGroup={(params) => (
+                <li key={params.key}>
+                  <div style={{
+                    backgroundColor: '#f5f5f5',
+                    fontWeight: 'bold',
+                    color: '#666',
+                    padding: '8px 16px',
+                    borderBottom: '1px solid #e0e0e0',
+                    fontSize: '0.875rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}>
+                    {params.group}
+                  </div>
+                  <ul style={{ padding: 0, margin: 0 }}>
+                    {params.children}
+                  </ul>
+                </li>
+              )}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  placeholder="Search tasks..."
+                  size="small"
+                  disabled={!selectedProject}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: 'white',
+                      '&:hover': {
+                        backgroundColor: '#f8f9fa'
+                      }
+                    }
+                  }}
+                />
+              )}
+              renderOption={(props, option) => (
+                <Box component="li" {...props}>
+                  {option.name}
+                </Box>
+              )}
+              ListboxProps={{
+                style: {
+                  maxHeight: 300
+                }
+              }}
+              noOptionsText="No tasks found"
+              clearOnEscape
+              selectOnFocus
+              handleHomeEndKeys
               disabled={!selectedProject}
-            >
-              <option value="">Select a task</option>
-              {selectedProject && selectedProject.tasks.map((task) => (
-                <option key={task.id} value={task.id}>
-                  {task.name}
-                </option>
-              ))}
-            </select>
+            />
           </div>
 
           <div>
