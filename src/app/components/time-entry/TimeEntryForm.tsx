@@ -296,7 +296,6 @@ export default function TimeEntryForm({ onSubmit }: TimeEntryFormProps) {
                     }}
                 />
             </div>
-
             <button
                 type="submit"
                 disabled={submitting}
