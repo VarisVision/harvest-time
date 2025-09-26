@@ -67,3 +67,7 @@ body {
     max-width: 104px;
   }
 }
+
+button {
+  cursor: pointer;
+}

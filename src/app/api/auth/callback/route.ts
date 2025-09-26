@@ -5,12 +5,12 @@ export async function GET(request: NextRequest) {
   const error = request.nextUrl.searchParams.get("error")
 
   if (error) {
-    const redirectResponse = NextResponse.redirect(new URL(`/auth-error?error=${encodeURIComponent(error)}`, request.url))
+    const redirectResponse = NextResponse.redirect(new URL(`/auth/auth-error?error=${encodeURIComponent(error)}`, request.url))
     return redirectResponse
   }
 
   if (!code) {
-    const redirectResponse = NextResponse.redirect(new URL("/auth-error?error=No code provided", request.url))
+    const redirectResponse = NextResponse.redirect(new URL("/auth/auth-error?error=No code provided", request.url))
     return redirectResponse
   }
 
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   const clientSecret = process.env.HARVEST_CLIENT_SECRET
 
   if (!clientId || !redirectUri || !clientSecret) {
-    const redirectResponse = NextResponse.redirect(new URL("/auth-error?error=Missing OAuth configuration", request.url))
+    const redirectResponse = NextResponse.redirect(new URL("/auth/auth-error?error=Missing OAuth configuration", request.url))
     return redirectResponse
   }
 
@@ -36,13 +36,13 @@ export async function GET(request: NextRequest) {
   })
 
   if (!response.ok) {
-    const redirectResponse = NextResponse.redirect(new URL(`/auth-error?error=Failed to get token`, request.url))
+    const redirectResponse = NextResponse.redirect(new URL(`/auth/auth-error?error=Failed to get token`, request.url))
     return redirectResponse
   }
 
   const data = await response.json()
 
-  const redirectResponse = NextResponse.redirect(new URL("/auth-success", request.url))
+  const redirectResponse = NextResponse.redirect(new URL("/auth/auth-success", request.url))
   redirectResponse.cookies.set("harvest_token", data.access_token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

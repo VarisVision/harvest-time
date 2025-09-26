@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { logout } from "../utils/logout"
 
 interface Todo {
   id: number
@@ -14,7 +13,6 @@ interface Todo {
 export default function TodoPage() {
   const [todos, setTodos] = useState<Todo[]>([])
   const [newTodoText, setNewTodoText] = useState("")
-  const [logoutLoading, setLogoutLoading] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -56,11 +54,6 @@ export default function TodoPage() {
     setTodos(todos.filter(todo => todo.id !== id))
   }
 
-  const handleLogout = async () => {
-    setLogoutLoading(true)
-    await logout()
-  }
-
   const completedCount = todos.filter(todo => todo.completed).length
   const totalCount = todos.length
 
@@ -76,16 +69,6 @@ export default function TodoPage() {
             Time Entry
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
               <path fill="currentColor" d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10s10-4.5 10-10S17.5 2 12 2m4.2 14.2L11 13V7h1.5v5.2l4.5 2.7z"/>
-            </svg>
-          </button>
-          <button
-            onClick={handleLogout}
-            disabled={logoutLoading}
-            className="text-red-500 font-bold rounded hover:text-red-600 disabled:opacity-50 cursor-pointer flex items-center gap-2"
-          >
-            {logoutLoading ? "Logging out..." : "Log Out"}
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
-              <path fill="currentColor" d="M5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h7v2H5v14h7v2zm11-4l-1.375-1.45l2.55-2.55H9v-2h8.175l-2.55-2.55L16 7l5 5z" />
             </svg>
           </button>
         </div>

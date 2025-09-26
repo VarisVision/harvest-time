@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { ApplicationContext } from "@sitecore-marketplace-sdk/client";
-import { useMarketplaceClient } from "./utils/hooks/useMarketplaceClient";
+import { useMarketplaceClient } from "../utils/hooks/useMarketplaceClient";
 
 function App() {
   const { client, error, isInitialized } = useMarketplaceClient();
