@@ -39,12 +39,12 @@ export default function LoginPage() {
       } else {
         throw new Error("Popup blocked")
       }
-    } catch (e) {
+    } catch {
       setIsAuthorizing(false)
       if (window.top && window.top !== window.self) {
         try {
           window.top.postMessage({ type: "OPEN_OAUTH", url: "/api/auth/login" }, "*")
-        } catch (postMessageError) {
+        } catch {
           window.location.href = "/api/auth/login"
         }
       } else {

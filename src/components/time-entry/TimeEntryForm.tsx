@@ -10,7 +10,7 @@ import ProjectSelector from "./ProjectSelector"
 import TaskSelector from "./TaskSelector"
 import { Project, Task, ProjectAssignment } from "../types"
 
-const CustomCalendarIcon = (props) => (
+const CustomCalendarIcon = (props: React.ComponentProps<typeof SvgIcon>) => (
   <SvgIcon {...props}>
     <g fill="none">
       <path stroke="currentColor" strokeWidth="1.5" d="M2 12c0-3.771 0-5.657 1.172-6.828S6.229 4 10 4h4c3.771 0 5.657 0 6.828 1.172S22 8.229 22 12v2c0 3.771 0 5.657-1.172 6.828S17.771 22 14 22h-4c-3.771 0-5.657 0-6.828-1.172S2 17.771 2 14z" />
