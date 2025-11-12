@@ -1,60 +1,72 @@
 "use client"
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import type { ApplicationContext } from "@sitecore-marketplace-sdk/client";
-import { useMarketplaceClient } from "./utils/hooks/useMarketplaceClient";
+import { useEffect, useState } from "react"
+import FloatingMenu from "./components/FloatingMenu"
 
-function App() {
-  const { client, error, isInitialized } = useMarketplaceClient();
-  const [appContext, setAppContext] = useState<ApplicationContext>();
-  const router = useRouter();
+export default function LoginPage() {
+  const [isAuthorizing, setIsAuthorizing] = useState(false)
 
   useEffect(() => {
-    if (!error && isInitialized && client) {
-      console.log("Marketplace client initialized successfully.");
-
-      // Make a query to retrieve the application context
-      client.query("application.context")
-        .then((res) => {
-          console.log("Success retrieving application.context:", res.data);
-          setAppContext(res.data);
-        })
-        .catch((error) => {
-          console.error("Error retrieving application.context:", error);
-        });
-    } else if (error) {
-      console.error("Error initializing Marketplace client:", error);
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.type === "OAUTH_SUCCESS") {
+        setIsAuthorizing(false)
+        window.location.href = "/time-entry"
+      } else if (event.data.type === "OAUTH_ERROR") {
+        setIsAuthorizing(false)
+      }
     }
-  }, [client, error, isInitialized]);
+
+    window.addEventListener("message", handleMessage)
+    return () => window.removeEventListener("message", handleMessage)
+  }, [])
+
+  const handleAuthorize = () => {
+    try {
+      setIsAuthorizing(true)
+      const popup = window.open("/api/auth/login", "harvest_oauth", 
+        "width=500,height=600,scrollbars=yes,resizable=yes,location=yes"
+      )
+      
+      if (popup) {
+        const checkClosed = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(checkClosed)
+            if (isAuthorizing) {
+              setIsAuthorizing(false)
+            }
+          }
+        }, 1000)
+      } else {
+        throw new Error("Popup blocked")
+      }
+    } catch (e) {
+      setIsAuthorizing(false)
+      if (window.top && window.top !== window.self) {
+        try {
+          window.top.postMessage({ type: "OPEN_OAUTH", url: "/api/auth/login" }, "*")
+        } catch (postMessageError) {
+          window.location.href = "/api/auth/login"
+        }
+      } else {
+        window.location.href = "/api/auth/login"
+      }
+    }
+  }
 
   return (
-    <div className="flex flex-col justify-center items-center min-h-screen w-full max-w-lg p-4 m-auto">
-      <h1 className="text-2xl font-bold mb-8 text-center">Welcome to {appContext?.name || "Harvest Time"}</h1>
-      
-      <div className="space-y-4 w-full">
-        <button
-          onClick={() => router.push('/time-entry')}
-          className="w-full bg-blue-600 text-white font-bold px-6 py-4 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-3"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-            <path fill="currentColor" d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10s10-4.5 10-10S17.5 2 12 2m4.2 14.2L11 13V7h1.5v5.2l4.5 2.7z"/>
-          </svg>
-          Track Time
-        </button>
-        
-        <button
-          onClick={() => router.push('/todo')}
-          className="w-full bg-green-600 text-white font-bold px-6 py-4 rounded-lg hover:bg-green-700 flex items-center justify-center gap-3"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-            <path fill="currentColor" d="M10 17l-4-4l1.41-1.41L10 14.17l6.59-6.59L18 9z"/>
-          </svg>
-          Todo List
-        </button>
-      </div>
+    <>
+    
+    <FloatingMenu />
+    <div className="flex flex-col items-center justify-center h-screen">
+        <h1 className="text-2xl font-bold mb-4">You need to sign in!</h1>
+        <p className="mb-4 text-center">
+            You need to be signed into a Harvest account!<br /> 
+            Please, sign in or sign up:
+        </p>
+        <button onClick={handleAuthorize} className="hover:cursor-pointer bg-[#6e3fff] hover:bg-[#5319e0] px-4 py-2 rounded-full text-white font-medium">Sign In</button>
     </div>
-  );
+    </>
+  )
 }
 
-export default App;
+

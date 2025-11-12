@@ -3,6 +3,7 @@
 import React, { useState } from "react"
 import { logout } from "../utils/logout"
 import TimeEntryForm from "../components/time-entry/TimeEntryForm"
+import FloatingMenu from "../components/FloatingMenu"
 
 export default function TimeEntryPage() {
   const [logoutLoading, setLogoutLoading] = useState(false)
@@ -34,6 +35,8 @@ export default function TimeEntryPage() {
   }
 
   return (
+    <>
+    <FloatingMenu />
     <div className="flex flex-col justify-center min-h-screen w-full max-w-lg p-4 m-auto">
       <div className="flex flex-row justify-between mb-4">
         <h2 className="text-xl font-semibold">Create New Time Entry</h2>
@@ -53,5 +56,6 @@ export default function TimeEntryPage() {
 
 
     </div>
+    </>
   )
 }

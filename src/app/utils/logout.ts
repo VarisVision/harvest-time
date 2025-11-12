@@ -5,13 +5,13 @@ export async function logout() {
     })
     
     if (response.ok) {
-      window.location.href = "/login"
+      window.location.href = "/"
     } else {
       console.error("Logout failed")
-      window.location.href = "/login"
+      window.location.href = "/"
     }
   } catch (error) {
     console.error("Logout error:", error)
-    window.location.href = "/login"
+    window.location.href = "/"
   }
 }

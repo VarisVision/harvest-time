@@ -1,8 +1,7 @@
 @import "tailwindcss";
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
-  background-color: #fff9f5;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }
 
 .png-time-entry {
@@ -66,4 +65,23 @@ body {
     margin-top: 0.4rem;
     max-width: 104px;
   }
+}
+
+button {
+  cursor: pointer;
+}
+
+.chakra-menu__menuitem {
+  padding: 8px 14px;
+  font-size: .815rem;
+  color: rgba(0, 0, 0, 0.9);
+  background-color: #fff;
+}
+
+.chakra-menu__menuitem:hover {
+  background-color: #e9e9e9;
+}
+
+.chakra-menu__menu-list {
+  box-shadow:  0px 4px 6px -1px rgba(0, 0, 0, .1);
 }

@@ -8,7 +8,7 @@ export default function AuthErrorPage() {
       window.opener.postMessage({ type: "OAUTH_ERROR" }, "*")
       window.close()
     } else {
-      window.location.href = "/login?error=Authentication failed"
+      window.location.href = "/?error=Authentication failed"
     }
   }, [])
 

@@ -63,7 +63,7 @@ export default function TimeEntryForm({ onSubmit }: TimeEntryFormProps) {
       const assignmentsRes = await fetch("/api/project-assignments")
 
       if (assignmentsRes.status === 401) {
-        router.push("/login")
+        router.push("/time-entry")
         return
       }
 
@@ -299,7 +299,7 @@ export default function TimeEntryForm({ onSubmit }: TimeEntryFormProps) {
             <button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-green-600 text-white font-bold px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50 cursor-pointer"
+                className="w-full bg-[#6e3fff] hover:bg-[#5319e0] text-white font-bold px-4 py-2 rounded disabled:opacity-50 cursor-pointer"
                 >
                 {submitting ? "Saving..." : "Save Time Entry"}
             </button>
