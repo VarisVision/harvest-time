@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import FloatingMenu from "./components/FloatingMenu"
+import FloatingMenu from "@/components/FloatingMenu"
 
 export default function LoginPage() {
   const [isAuthorizing, setIsAuthorizing] = useState(false)

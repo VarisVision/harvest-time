@@ -1,9 +1,9 @@
 "use client"
 
 import React, { useState } from "react"
-import { logout } from "../utils/logout"
-import TimeEntryForm from "../components/time-entry/TimeEntryForm"
-import FloatingMenu from "../components/FloatingMenu"
+import { logout } from "@/utils/logout"
+import TimeEntryForm from "@/components/time-entry/TimeEntryForm"
+import FloatingMenu from "@/components/FloatingMenu"
 
 export default function TimeEntryPage() {
   const [logoutLoading, setLogoutLoading] = useState(false)
